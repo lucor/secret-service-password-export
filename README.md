@@ -1,4 +1,4 @@
-# secret-service-password-export
+# Secret Service Password Export
 
 A Go CLI tool to export passwords from a [Secret Service](https://specifications.freedesktop.org/secret-service/latest/) keychain collection using D-Bus
 
@@ -22,7 +22,7 @@ Options:
 	-c, --collection    Collection to export. Leave empty to list the available collections
 	-f, --format	    Output format for the export. Allowed values: [paw, csv]. Default to Paw JSON format
 	-o, --output	    Write the output to the specified file. If omitted, writes to stdout
-	-h, --help	        Displays the help and exit
+	-h, --help	    Displays the help and exit
 
 Export the Secrect Service collection using the specified format to stdout.
 ```
