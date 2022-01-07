@@ -91,7 +91,7 @@ Export the Secrect Service collection using the specified format to stdout.`)
 		log.Fatal(err)
 	}
 
-	data := []pawPassword{}
+	data := []pawLogin{}
 	t := time.Now().Format(time.RFC1123)
 	for _, item := range items {
 		// make sure it is unlocked
@@ -100,14 +100,21 @@ Export the Secrect Service collection using the specified format to stdout.`)
 		if err != nil {
 			log.Fatal(err)
 		}
-		secret, err := item.GetSecret(session.Path())
-		if err != nil {
-			log.Fatal(err)
-		}
 		label, err := item.GetLabel()
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		secret, err := item.GetSecret(session.Path())
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if len(secret.Value) == 0 {
+			log.Printf("skipped item with empty password: %s", label)
+			continue
+		}
+
 		created, err := item.GetCreated()
 		if err != nil {
 			log.Fatal(err)
@@ -117,11 +124,13 @@ Export the Secrect Service collection using the specified format to stdout.`)
 			log.Fatal(err)
 		}
 
-		data = append(data, pawPassword{
-			Value: string(secret.Value),
+		data = append(data, pawLogin{
+			Password: pawPassword{
+				Value: string(secret.Value),
+			},
 			Metadata: pawMetadata{
 				Name:     label,
-				Type:     passwordItemType,
+				Type:     loginItemType,
 				Created:  created,
 				Modified: modified,
 			},
@@ -144,7 +153,7 @@ Export the Secrect Service collection using the specified format to stdout.`)
 		csvw := csv.NewWriter(w)
 		csvw.Write([]string{"name", "password", "created", "modified"})
 		for _, v := range data {
-			csvw.Write([]string{v.Metadata.Name, v.Value, v.Metadata.Created.String(), v.Metadata.Modified.String()})
+			csvw.Write([]string{v.Metadata.Name, v.Password.Value, v.Metadata.Created.String(), v.Metadata.Modified.String()})
 		}
 		csvw.Flush()
 		if err := csvw.Error(); err != nil {
@@ -154,8 +163,8 @@ Export the Secrect Service collection using the specified format to stdout.`)
 	}
 
 	// Default to Paw JSON export
-	v := map[string][]pawPassword{
-		"password": data,
+	v := map[string][]pawLogin{
+		"login": data,
 	}
 
 	err = json.NewEncoder(w).Encode(v)
@@ -164,12 +173,16 @@ Export the Secrect Service collection using the specified format to stdout.`)
 	}
 }
 
-const passwordItemType = 4
-
-type pawPassword struct {
-	Value    string      `json:"value,omitempty"`
+type pawLogin struct {
 	Metadata pawMetadata `json:"metadata,omitempty"`
 	Note     pawNote     `json:"note,omitempty"`
+	Password pawPassword `json:"password,omitempty"`
+}
+
+const loginItemType = 8
+
+type pawPassword struct {
+	Value string `json:"value,omitempty"`
 }
 
 type pawMetadata struct {
